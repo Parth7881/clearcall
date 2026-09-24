@@ -9,11 +9,32 @@ type Config = {configured:boolean; model:string; questions:string[]};
 const currentJobs = new Map<string,string>();
 const active = (job:Job|null) => !!job && ['queued','running'].includes(job.status);
 
+const draftMemory = new Map<string,string>();
+function useDraft(name:string) {
+  const key = 'clearcall.draft.' + name;
+  const [value,setValue] = useState(() => {
+    try {return localStorage.getItem(key) ?? draftMemory.get(key) ?? '';}
+    catch {return draftMemory.get(key) ?? '';}
+  });
+  const [saveError,setSaveError] = useState(false);
+  function update(next:string) {
+    setValue(next);
+    draftMemory.set(key,next);
+    try {
+      if(next) localStorage.setItem(key,next);
+      else localStorage.removeItem(key);
+      setSaveError(false);
+    } catch {setSaveError(true);}
+  }
+  return [value,update,saveError] as const;
+}
+
+
 export default function Analysis({transcripts, mode, onSource}:{transcripts:Transcript[]; mode:'analysis'|'ask'; onSource:(id:string, passage:number)=>void}) {
   const [config,setConfig] = useState<Config|null>(null);
   const [selected,setSelected] = useState<string[]>(() => transcripts.slice(0,50).map(t => t.id));
-  const [questions,setQuestions] = useState('');
-  const [question,setQuestion] = useState('');
+  const [questions,setQuestions,guideSaveError] = useDraft('guide');
+  const [question,setQuestion,askSaveError] = useDraft('ask');
   const [job,setJob] = useState<Job|null>(null);
   const [error,setError] = useState('');
   const [busy,setBusy] = useState(false);
@@ -59,7 +80,9 @@ export default function Analysis({transcripts, mode, onSource}:{transcripts:Tran
         {transcripts.map(t=><label key={t.id}><input type="checkbox" checked={selected.includes(t.id)} disabled={active(job)||(!selected.includes(t.id)&&selected.length>=50)} onChange={e=>setSelected(s=>e.target.checked?[...s,t.id]:s.filter(id=>id!==t.id))}/><span>{t.expert}<small>{t.market}</small></span></label>)}
       </details>
       <p className="analysis-note">{mode==='ask'?'Ask one question across the selected interviews.':'Get one answer per question, comparing the selected experts.'}</p>
-      {mode==='ask'?<label className="analysis-field">Your question<textarea rows={4} maxLength={2000} value={question} onChange={e=>setQuestion(e.target.value)} placeholder="Type your question"/></label>:<><label className="analysis-field">Your questions<textarea rows={7} value={questions} onChange={e=>setQuestions(e.target.value)} placeholder="One question per line (up to 12)"/></label><button className="button text-button" disabled={busy||active(job)||!config} onClick={()=>setQuestions(config?.questions.join('\n')||'')}>Use case-study guide</button></>}
+      {mode==='ask'?<label className="analysis-field">Your question<textarea rows={4} maxLength={2000} value={question} onChange={e=>setQuestion(e.target.value)} placeholder="Type your question"/></label>:<><label className="analysis-field">Your questions<textarea rows={7} value={questions} onChange={e=>setQuestions(e.target.value)} placeholder="One question per line (up to 12)"/></label><button className="button text-button" disabled={busy||active(job)||!config||!!questions} onClick={()=>setQuestions(config?.questions.join('\n')||'')}>Use case-study guide</button></>}
+      {(mode==='ask'?question:questions) && <button className="button text-button" onClick={()=>mode==='ask'?setQuestion(''):setQuestions('')}>Clear draft</button>}
+      {(mode==='ask'?askSaveError:guideSaveError) && <p role="alert">Draft could not be saved in this browser. Copy it before closing or refreshing the page.</p>}
       <p className="analysis-note">Selected interview text is sent to Groq. Provider usage charges may apply.</p>
       <button className="button primary" disabled={!config?.configured||!selected.length||active(job)||busy||(mode==='ask'?!question.trim():!questions.trim())} onClick={start}>{busy?'Starting…':mode==='ask'?'Get answer':'Get answers'}</button>
     </div>

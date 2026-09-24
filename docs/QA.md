@@ -76,3 +76,8 @@ Live check: the configured key was detected. Corrected the generateContent JSON 
 - 32 backend tests pass, including 35-source batch/jobs, the new ID-based source format and one combined answer per question. User source files were not edited or added to Git.
 
 - Final live Groq run completed with six combined answers and valid source citations for all six. Invalid generated citations receive one targeted retry; persistent validation failures are clearly reported. Browser checks confirm empty question fields, no saved-run selector, no automatic old results and no horizontal overflow at 390px.
+
+
+## Persistent drafts
+
+Ask and Guide answers save independent drafts synchronously to browser localStorage on each edit. Navigation, refresh, submission and configuration checks do not clear them. Clear draft (or deleting all text) removes the stored value. Loading the case-study guide is disabled while a guide draft exists. A memory fallback preserves navigation when browser storage fails, with a visible warning that refresh persistence is unavailable. Browser checks verified both drafts after navigation and refresh, independent clearing, and a cleared Ask draft remaining blank after refresh. Frontend typecheck/build passed. Storage is scoped to the same browser profile and origin; clearing browser site data removes drafts.
