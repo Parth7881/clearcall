@@ -59,7 +59,7 @@ GROQ_MODEL=openai/gpt-oss-120b
 
 Get a key from https://console.groq.com/keys. Never commit `.env`. Open Guide answers and click Check configuration; settings are reread without a restart. Keys stay on the backend. Running Guide answers or Ask sends selected interview text to Groq and may incur provider charges.
 
-Select up to 50 interviews. Guide answers starts empty. Enter one question per line, or explicitly load the supplied case-study guide. Each question produces one combined answer identifying expert views, shared findings and material differences. Source quotes expand on demand. Ask handles a single follow-up question. Ask splits expert passages into excerpts of up to 1,200 characters, includes the highest-ranked excerpt from every selected interview, then adds relevant excerpts within a 64,000-character budget. Short interviews can fit in full. This is lexical retrieval, not an exhaustive reading for every question. Quote links open the original passage.
+Select up to 50 interviews. Guide answers starts empty. Enter one question per line. Each question produces one combined answer identifying expert views, shared findings and material differences. Source quotes expand on demand. Ask handles a single follow-up question. Ask splits expert passages into excerpts of up to 1,200 characters, includes the highest-ranked excerpt from every selected interview, then adds relevant excerpts within a 64,000-character budget. Short interviews can fit in full. This is lexical retrieval, not an exhaustive reading for every question. Quote links open the original passage.
 
 One background job runs at a time, processing interviews sequentially to bound provider traffic. Results and per-interview caches persist in SQLite. Cancel stops after the current provider request; restarting marks unfinished runs interrupted. Run again to reuse completed cached interviews and retry failures. Synthesis runs again each time. Saved-run controls and automatic reopening of completed results have been removed. Current-session answers survive tab navigation; backend progress and caching remain persistent.
 
@@ -127,7 +127,7 @@ This implementation was created with OpenAI Codex assistance, including planning
 ## Technical-round walkthrough
 
 1. Upload the three supplied interviews from `backend/samples`.
-2. Open Guide answers, click Use case-study guide, and run all three interviews.
+2. Open Guide answers, enter the questions from backend/samples/Interview_Guide.txt, and run all three interviews.
 3. Read one combined answer per question. Expand Sources and click a citation to verify its original text and timestamp.
 4. Review shared views and differences within each answer. Compare the Germany-wide growth estimate with France's stronger-centre estimate without treating different scopes as a contradiction.
 5. Open Ask and ask how budgets and ROI influence purchasing. Verify the cited experts and passages.
