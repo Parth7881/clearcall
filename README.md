@@ -57,11 +57,11 @@ GROQ_API_KEY=your_key_here
 GROQ_MODEL=openai/gpt-oss-120b
 ```
 
-Get a key from https://console.groq.com/keys. Never commit `.env`. Open Analysis and click Check configuration; settings are reread without a restart. Keys stay on the backend. Running Analysis or Ask sends selected interview text to Groq and may incur provider charges.
+Get a key from https://console.groq.com/keys. Never commit `.env`. Open Guide answers and click Check configuration; settings are reread without a restart. Keys stay on the backend. Running Guide answers or Ask sends selected interview text to Groq and may incur provider charges.
 
-Select up to 50 interviews. Analysis answers the six original guide questions (editable), then compares common themes and differences. Ask splits expert passages into excerpts of up to 1,200 characters, includes the highest-ranked excerpt from every selected interview, then adds relevant excerpts within a 64,000-character budget. Short interviews can fit in full. This is lexical retrieval, not an exhaustive reading for every question. Quote links open the original passage.
+Select up to 50 interviews. Guide answers starts empty. Enter one question per line, or explicitly load the supplied case-study guide. Each question produces one combined answer identifying expert views, shared findings and material differences. Source quotes expand on demand. Ask handles a single follow-up question. Ask splits expert passages into excerpts of up to 1,200 characters, includes the highest-ranked excerpt from every selected interview, then adds relevant excerpts within a 64,000-character budget. Short interviews can fit in full. This is lexical retrieval, not an exhaustive reading for every question. Quote links open the original passage.
 
-One background job runs at a time, processing interviews sequentially to bound provider traffic. Results and per-interview caches persist in SQLite. Cancel stops after the current provider request; restarting marks unfinished runs interrupted. Run again to reuse completed cached interviews and retry failures. Synthesis runs again each time. Saved runs remain available through the selector.
+One background job runs at a time, processing interviews sequentially to bound provider traffic. Results and per-interview caches persist in SQLite. Cancel stops after the current provider request; restarting marks unfinished runs interrupted. Run again to reuse completed cached interviews and retry failures. Synthesis runs again each time. Saved-run controls and automatic reopening of completed results have been removed. Current-session answers survive tab navigation; backend progress and caching remain persistent.
 
 The server checks that each quoted span exists in the cited expert passage and computes its source offsets. This checks attribution, not whether the model's reasoning follows from the quote: review important conclusions. Unsupported or invalidly cited answers display an insufficient-evidence message. Very long interviews are split into bounded excerpts; cross-source synthesis uses compact validated answers and can miss nuance.
 
@@ -127,10 +127,13 @@ This implementation was created with OpenAI Codex assistance, including planning
 ## Technical-round walkthrough
 
 1. Upload the three supplied interviews from `backend/samples`.
-2. Open Analysis, check the six original guide questions, and run all three interviews.
-3. Expand an expert to inspect their six answers. Click a quote citation to verify the exact original text and timestamp.
-4. Review Common themes and Differences. Compare the Germany-wide growth estimate with France's stronger-centre estimate without treating different scopes as a contradiction.
+2. Open Guide answers, click Use case-study guide, and run all three interviews.
+3. Read one combined answer per question. Expand Sources and click a citation to verify its original text and timestamp.
+4. Review shared views and differences within each answer. Compare the Germany-wide growth estimate with France's stronger-centre estimate without treating different scopes as a contradiction.
 5. Open Ask and ask how budgets and ROI influence purchasing. Verify the cited experts and passages.
 6. Explain scaling: 50-file atomic imports, bounded source chunks, one background job, persistent progress, per-source caching and retrieval across selected interviews. Rate limits remain account-dependent; 50-source support does not mean 50 simultaneous provider calls.
 
 Groq hosts `openai/gpt-oss-120b`, selected for strict JSON-schema output and evidence extraction. This requires a Groq key, not an OpenAI key. The adapter retries transient failures and honors numeric Retry-After delays up to 60 seconds. Longer quota restrictions are returned as an actionable error; successful source work remains cached. No automatic provider fallback sends your interviews elsewhere.
+
+
+Additional supported import format: `Expert ID: EXP-05`, `Role: Systems Engineer`, and optional `Core Subject: Infrastructure`, followed by the same timestamped speaker turns. A missing Market in this ID-based format is recorded as Not specified, never inferred. Source bytes and quote offsets remain unchanged. Uploads show a selected-file count and accept up to 50 files, 2 MiB each and 50 MiB total. Invalid batches still save no files.

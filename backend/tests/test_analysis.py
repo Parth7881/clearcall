@@ -46,7 +46,7 @@ class FakeProvider:
             evidence = [{'transcript_id': payload['transcript_id'], 'passage_id': p['ordinal'], 'quote': p['text']}]
             return {'answers':[{'question_index':i, 'answer':'Supported test answer.', 'evidence':evidence} for i in range(len(payload['questions']))]}
         if task == 'synthesize':
-            return {'themes':[], 'differences':[]}
+            return {'answers':[{'question_index':i,**payload['sources'][0]['answers'][i]} for i in range(len(payload['questions']))]}
         if task == 'ask':
             e = payload['passages'][0]
             return {'answer': 'Supported test answer.', 'evidence':[{'transcript_id':e['transcript_id'],'passage_id':e['ordinal'],'quote':e['text']}]}
@@ -187,3 +187,37 @@ def test_short_interviews_retain_all_expert_context(tmp_path):
         assert job['status']=='completed'
         assert len(seen)==21
         assert any('finance alone' in p['text'] for p in seen)
+
+def test_expert_id_subject_format_keeps_source_offsets(tmp_path):
+    raw=b'Expert ID: EXP-05\nRole: Systems Engineer\nCore Subject: Infrastructure\n\n00:00\nInterviewer: What limits performance?\n\n00:18\nCandidate: Memory bandwidth is the limit.\n'
+    with TestClient(create_app(tmp_path)) as c:
+        r=c.post('/api/transcripts',files=[('files',('expert.txt',raw))]);assert r.status_code==200
+        row=c.get('/api/transcripts').json()[0]
+        assert row['expert']=='EXP-05' and row['market']=='Not specified'
+        detail=c.get('/api/transcripts/'+row['id']).json();p=detail['passages'][1]
+        assert raw.decode()[p['start_offset']:p['end_offset']]==p['text']
+        assert c.get('/api/transcripts/'+row['id']+'/source').content==raw
+
+
+def test_guide_returns_one_combined_answer_per_question(tmp_path):
+    with TestClient(create_app(tmp_path,provider=FakeProvider())) as c:
+        c.post('/api/samples');ids=[r['id'] for r in c.get('/api/transcripts').json()]
+        job=wait_job(c,c.post('/api/analysis/jobs',json={'transcript_ids':ids,'questions':['What drives adoption?','What limits it?']}).json()['id'])
+        assert len(job['result']['answers'])==2
+        assert all(a['evidence'] for a in job['result']['answers'])
+        assert 'themes' not in job['result'] and 'differences' not in job['result']
+
+def test_combined_answer_retries_invalid_citation(tmp_path):
+    class Retry(FakeProvider):
+        synthesis=0
+        def generate(self,task,payload,schema):
+            if task=='synthesize':
+                self.synthesis+=1
+                if self.synthesis==1:return {'answers':[{'question_index':0,'answer':'Bad quote','evidence':[]}]}
+            return super().generate(task,payload,schema)
+    provider=Retry()
+    with TestClient(create_app(tmp_path,provider=provider)) as c:
+        c.post('/api/samples');ids=[r['id'] for r in c.get('/api/transcripts').json()]
+        j=wait_job(c,c.post('/api/analysis/jobs',json={'transcript_ids':ids,'questions':['What drives adoption?']}).json()['id'])
+        assert j['result']['answers'][0]['status']=='supported'
+        assert provider.synthesis==2

@@ -22,15 +22,21 @@ def parse_transcript(raw: bytes, filename: str) -> dict:
     fields = {}
     consumed = []
     for key, pattern in {
-        'expert': r'^Expert(?:[ \t]+\d+)?[ \t]*(?:[–—-]|:)[ \t]*([^\r\n]+?)[ \t]*\r?$',
+        'expert': r'^Expert(?:[ \t]+ID)?(?:[ \t]+\d+)?[ \t]*(?:[–—-]|:)[ \t]*([^\r\n]+?)[ \t]*\r?$',
         'role': r'^Role:[ \t]*([^\r\n]+?)[ \t]*\r?$',
         'market': r'^Market:[ \t]*([^\r\n]+?)[ \t]*\r?$',
     }.items():
         m = re.search(pattern, header, re.MULTILINE | re.IGNORECASE)
+        if key == 'market' and not m and re.search(r'^Expert ID:', header, re.MULTILINE | re.IGNORECASE):
+            fields[key] = 'Not specified'
+            continue
         if not m or not m.group(1).strip():
             raise ValueError('Include Expert, Role and Market headers before the first timestamp.')
         fields[key] = m.group(1).strip()
         consumed.append(m.span())
+    subject = re.search(r'^Core Subject:[ \t]*[^\r\n]+\r?$', header, re.MULTILINE | re.IGNORECASE)
+    if subject:
+        consumed.append(subject.span())
     remainder = header
     for start, end in sorted(consumed, reverse=True):
         remainder = remainder[:start] + remainder[end:]

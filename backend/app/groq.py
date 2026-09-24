@@ -35,7 +35,7 @@ Every material factual claim must be supported by the evidence in that same answ
 
 TASKS = {
     'extract': 'Answer each numbered guide question using this source excerpt. Return all question indexes. Unsupported questions get empty answers. Cite at most 3 short expert quotes per answer.',
-    'synthesize': 'Using the validated source answers, identify common themes and differences. Each theme must cite at least two different experts. Each difference must cite at least two different experts and preserve their scopes; describe emphasis differences honestly. Return at most 6 themes and 6 differences. Reuse exact evidence quotes from the source answers. No unsupported aggregate claims.',
+    'synthesize': 'Return exactly one concise answer per numbered question, with question_index. Name each expert and their view where evidence exists, and say when an expert has no evidence. Weave shared views and genuine disagreements into that answer, without separate themes or differences sections or repeating the same point. Different phrasing or scope alone is not disagreement. Reuse exact evidence quotes from the supplied source answers. Cite every material claim. Unsupported questions have an empty answer and evidence.',
     'ask': 'Answer the question using only the provided retrieved expert passages. This is a selected evidence set, not necessarily exhaustive. Explicitly preserve material differences between experts; do not generalize one expert opinion across all sources. Cite up to 6 short source quotes. If the question cannot be answered from these passages, return an empty answer and empty evidence.',
 }
 

@@ -67,3 +67,12 @@ Live check: the configured key was detected. Corrected the generateContent JSON 
 - Live Q&A about budgets/ROI cited France, Germany and the UK after expanding short-interview retrieval to all 21 expert passages. An exact vendor-revenue question correctly returned insufficient evidence with no citations.
 - Browser verified saved live results, enabled analysis action and Groq disclosure. Tests ran in isolated ignored QA databases; user transcripts were not replaced.
 - Initial live requests hit Groq rate limits. Numeric Retry-After is now honored up to 60 seconds. Large batches remain subject to the user's plan limits. Evidence checks validate source spans, not every semantic inference; review conclusions before submission.
+
+
+## Answer workflow and actual 30-file upload
+
+- Removed Saved runs, automatic guide prefilling, automatic reopening of completed jobs and duplicated theme/difference/expert answer sections. Guide answers now produces one combined, cited answer per question; Ask handles one follow-up. Quotes are collapsed under Sources. Active jobs remain recoverable and current-session results survive tab navigation.
+- Imported all 30 actual EXP files from the user's Downloads/transcript folder successfully into an isolated database. Added support for Expert ID / Role / Core Subject without fabricating a market. Original bytes are preserved.
+- 32 backend tests pass, including 35-source batch/jobs, the new ID-based source format and one combined answer per question. User source files were not edited or added to Git.
+
+- Final live Groq run completed with six combined answers and valid source citations for all six. Invalid generated citations receive one targeted retry; persistent validation failures are clearly reported. Browser checks confirm empty question fields, no saved-run selector, no automatic old results and no horizontal overflow at 390px.

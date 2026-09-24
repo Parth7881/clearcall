@@ -21,7 +21,7 @@ STRING = {'type':'string'}
 EVIDENCE = obj({'transcript_id':STRING,'passage_id':{'type':'integer'},'quote':STRING})
 ANSWER = obj({'answer':STRING,'evidence':{'type':'array','items':EVIDENCE}})
 EXTRACT = obj({'answers':{'type':'array','items':obj({**ANSWER['properties'],'question_index':{'type':'integer'}})}})
-SYNTHESIS = obj({k:{'type':'array','items':ANSWER} for k in ('themes','differences')})
+SYNTHESIS = EXTRACT
 
 def validate_answer(value, rows):
     empty = {'answer':'No supported answer in these sources.','status':'insufficient','evidence':[]}
@@ -104,7 +104,7 @@ class AnalysisManager:
                 job['completed'] = len(rows)
             else:
                 results, failures = [], []
-                job['result'] = {'transcripts':results,'themes':[],'differences':[],'failures':failures}
+                job['result'] = {'transcripts':results,'answers':[],'failures':failures}
                 for row in rows.values():
                     if self.cancel.is_set(): break
                     try:
@@ -137,12 +137,22 @@ class AnalysisManager:
                     compact = [{'expert':r['expert'],'market':r['market'],'answers':[{'question':a['question'],'answer':a['answer'][:500],
                         'evidence':[{'transcript_id':e['transcript_id'],'passage_id':e['passage_id'],'quote':e['quote'][:500]} for e in a['evidence'][:2]]} for a in r['answers']]} for r in results]
                     try:
-                        synthesis = provider.generate('synthesize',{'sources':compact},SYNTHESIS)
-                        for kind in ('themes','differences'):
-                            for value in synthesis.get(kind,[])[:6]:
-                                checked = validate_answer(value,rows)
-                                if len({e['transcript_id'] for e in checked['evidence']}) >= 2:
-                                    job['result'][kind].append(checked)
+                        synthesis = provider.generate('synthesize',{'questions':job['questions'],'sources':compact},SYNTHESIS)
+                        values = synthesis.get('answers',[])
+                        if not isinstance(values,list): raise AIError('The combined answer could not be read. Try again.')
+                        for index, question in enumerate(job['questions']):
+                            value = next((a for a in values if isinstance(a,dict) and a.get('question_index') == index),{})
+                            checked = validate_answer(value,rows)
+                            has_evidence = any(r['answers'][index]['evidence'] for r in results)
+                            if checked['status'] != 'supported' and has_evidence:
+                                retry_sources = [{**source,'answers':[source['answers'][index]]} for source in compact]
+                                retry = provider.generate('synthesize',{'questions':[question],'sources':retry_sources,
+                                    'validation_note':'Previous answer lacked valid exact quotes. Copy evidence quote strings exactly, including punctuation and spacing.'},SYNTHESIS)
+                                retry_values = retry.get('answers',[])
+                                checked = validate_answer(retry_values[0] if isinstance(retry_values,list) and retry_values else {},rows)
+                                if checked['status'] != 'supported':
+                                    checked['answer'] = 'An answer could not be verified against the source quotes. Please try again.'
+                            job['result']['answers'].append({'question':question,**checked})
                     except AIError as exc:
                         job['error'] = str(exc)
                 if failures: job['error'] = f'{len(failures)} interviews could not be analyzed. Run again to retry.'
