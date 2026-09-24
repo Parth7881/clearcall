@@ -38,7 +38,7 @@ export default function Reader({detail, onBack}: {detail: Detail; onBack: () => 
   return <section className="reader" aria-label="Transcript reader">
     <div className="reader-heading">
       <button className="button text-button mobile-back" onClick={onBack}><ArrowLeft size={18}/>Transcripts</button>
-      <div className="reader-title-row"><div><p className="eyebrow"><span className="source-dot"/>SOURCE INTERVIEW <span className="eyebrow-separator">/</span> {detail.market}</p><h2>{detail.expert}</h2><p className="reader-meta">{detail.role} <span>·</span> {detail.market}</p></div><a className="button source-button" aria-label="Original file" href={`/api/transcripts/${detail.id}/source`} download><FileText size={17}/><span>Original file</span></a></div>
+      <div className="reader-title-row"><div><h2>{detail.expert}</h2><p className="reader-meta">{detail.role} <span>·</span> {detail.market}</p></div><a className="button source-button" aria-label="Original file" href={`/api/transcripts/${detail.id}/source`} download><FileText size={17}/><span>Original file</span></a></div>
       <div className="reader-tools"><div className="search-input"><Search size={18}/><input aria-label="Search this transcript" placeholder="Search this transcript" value={query} onChange={e => {setQuery(e.target.value); list.current?.scrollTo(0, 0);}}/>{query && <button className="clear-button" aria-label="Clear transcript search" onClick={() => setQuery('')}><X size={16}/></button>}</div>
         <label className="switch-label"><input type="checkbox" checked={expertOnly} onChange={e => {setExpertOnly(e.target.checked); list.current?.scrollTo(0, 0);}}/><span className="switch" aria-hidden="true"/>Expert only</label>
       </div>
@@ -46,10 +46,9 @@ export default function Reader({detail, onBack}: {detail: Detail; onBack: () => 
     </div>
     <div ref={list} className="passages" tabIndex={0} aria-label="Transcript passages">
       {filtered.map(p => <article ref={node => {if (node) passageNodes.current.set(p.ordinal, node); else passageNodes.current.delete(p.ordinal);}} key={p.ordinal} id={`passage-${p.ordinal}`} className={'passage' + (p.is_expert ? ' expert-passage' : ' interviewer-passage') + (active === p.ordinal ? ' active-passage' : '')}>
-        <button className="timestamp" aria-label={'Go to ' + p.timestamp} onClick={() => jump(p.ordinal)}>{p.timestamp}</button><div><p className="speaker">{p.speaker}{p.is_expert && <span className="expert-label">Expert</span>}</p><p className="passage-text"><Highlight text={p.text} query={query}/></p></div>
+        <button className="timestamp" aria-label={'Go to ' + p.timestamp} onClick={() => jump(p.ordinal)}>{p.timestamp}</button><div><p className="speaker">{p.speaker}</p><p className="passage-text"><Highlight text={p.text} query={query}/></p></div>
       </article>)}
       {!filtered.length && <div className="no-results"><Search size={26} strokeWidth={1.5}/><h3>No matching passages</h3><p>Try a different search or include the interviewer.</p><button className="button text-button" onClick={() => {setQuery(''); setExpertOnly(false);}}>Clear filters</button></div>}
     </div>
-    <footer className="reader-footer">Source text preserved <span>·</span> Timestamps from transcript</footer>
   </section>;
 }

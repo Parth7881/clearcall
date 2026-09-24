@@ -2,7 +2,7 @@
 
 A local workspace for the Hasamex European Robotic Surgery Market interviews. Minimal white interface, desktop and mobile layouts, original text and timestamps, and a real persistent backend.
 
-The updated design uses locally bundled Manrope and Source Sans 3 fonts, a blue/ink/teal/amber palette, and a focused mobile reader. See `docs/DESIGN_UPDATE.md` for design decisions and verification.
+The interface uses locally bundled Roboto, white and grey surfaces, a blue action color, and a focused mobile reader. See `docs/DESIGN_UPDATE.md` for design decisions and verification.
 
 ## Permanent project and GitHub updates
 
@@ -23,7 +23,7 @@ After a future update is pushed to this repository, stop the server with Ctrl+C,
 If your computer blocks unsigned scripts, use the manual commands below; no policy change is necessary.
 
 4. Open **http://127.0.0.1:8000** in your browser.
-5. Click **Load sample project** to load the supplied France, Germany and UK interviews.
+5. Click **Upload transcripts** and select your interview .txt files. The supplied interviews are available in `backend/samples` if needed.
 
 First launch downloads Python dependencies. The production frontend is included: **Node is not needed just to run the ZIP**. Stop the server with Ctrl+C. Subsequent runs keep your transcripts. If port 8000 is occupied, use `./start.ps1 -Port 8001` and open port 8001 instead.
 
@@ -39,7 +39,7 @@ On macOS/Linux use `python3 -m venv .venv` and `.venv/bin/python` in place of th
 
 ## What works in Part 1
 
-- Load the three provided interviews; repeated loading does not duplicate them.
+- Upload interview files; repeated uploads of identical contents do not duplicate them.
 - Upload up to five UTF-8 `.txt` files at once, up to 2 MiB per file.
 - Keep transcripts after a server restart in `data/clearcall.sqlite3`.
 - Find experts by name, role or market; search within a transcript; show expert passages only.
