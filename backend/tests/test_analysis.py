@@ -99,7 +99,7 @@ def test_provider_transport_and_secret_redaction(tmp_path,monkeypatch):
     def transport(request):
         assert request.headers['x-goog-api-key']=='test-secret-only'
         body=json.loads(request.content)
-        assert body['generationConfig']['responseFormat']['text']['mimeType']=='application/json'
+        assert body['generationConfig']['responseMimeType']=='application/json'
         return httpx.Response(200,json={'candidates':[{'finishReason':'STOP','content':{'parts':[{'text':'{"answer":"","evidence":[]}'}]}}]})
     p=GeminiProvider(tmp_path,httpx.MockTransport(transport))
     assert p.generate('ask',{}, {})=={'answer':'','evidence':[]}

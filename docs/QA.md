@@ -54,3 +54,6 @@ Extract the ZIP, follow the README, load samples, switch experts, search, toggle
 - Browser verified with an isolated 35-interview database: source selection, missing-key state, saved analysis, and citation navigation to the correct 00:18 passage. Test-only provider fixtures were confined to ignored QA data; no fake results are installed in the user's database.
 - Mobile Ask and citation reader checked at 390px viewport: no horizontal overflow. Configuration-dependent buttons remain disabled without a key.
 - Live Gemini requests, answer quality and real quota behavior are not verified. API key configuration was explicitly deferred by the user.
+
+
+Live check: the configured key was detected. Corrected the generateContent JSON options to responseMimeType/responseJsonSchema after a reproducible HTTP 400. Subsequent requests returned HTTP 503 (model high demand), including the bounded retry test. Full live answer quality remains unverified. All 24 regression tests pass.

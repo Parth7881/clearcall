@@ -53,7 +53,7 @@ class GeminiProvider:
         body = {
             'systemInstruction': {'parts':[{'text': SYSTEM + '\n' + TASKS[task]}]},
             'contents':[{'role':'user','parts':[{'text':json.dumps(payload,ensure_ascii=False)}]}],
-            'generationConfig': {'maxOutputTokens':8192, 'responseFormat':{'text':{'mimeType':'application/json','schema':schema}}},
+            'generationConfig': {'maxOutputTokens':8192, 'responseMimeType':'application/json', 'responseJsonSchema':schema},
         }
         url = f'https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent'
         with httpx.Client(timeout=httpx.Timeout(120,connect=15),transport=self.transport) as client:
@@ -72,6 +72,8 @@ class GeminiProvider:
                     raise AIError('Gemini rejected the API key or its permissions. Check your local configuration.')
                 if response.status_code == 429:
                     raise AIError('Gemini quota or rate limit reached. Wait, check your quota, and retry.')
+                if response.status_code >= 500:
+                    raise AIError('Gemini is temporarily unavailable or busy. Wait a few minutes and retry.')
                 if response.status_code == 404:
                     raise AIError('The configured Gemini model is unavailable. Check GEMINI_MODEL in .env.')
                 if response.status_code >= 400:
