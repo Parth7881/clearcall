@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CircleHelp, Plus, Search, FileText, LoaderCircle, X, ArrowLeft, RefreshCw } from 'lucide-react';
-import { request, errorMessage } from './api';
+import { request, errorMessage, ephemeral } from './api';
 import type { Detail, ImportResult, Transcript } from './types';
 import Dialog from './components/Dialog';
 import Upload from './components/Upload';
@@ -8,6 +8,7 @@ import Reader from './components/Reader';
 import Analysis from './components/Analysis';
 
 function savedSelection() {
+  if(ephemeral) return '';
   const hash = new URLSearchParams(location.hash.slice(1)).get('transcript');
   try {return hash || localStorage.getItem('clearcall.selection') || '';} catch {return hash || '';}
 }
@@ -40,7 +41,7 @@ export default function App() {
   useEffect(() => {
     if (!selected) return;
     const controller = new AbortController(); setDetail(null); setDetailError('');
-    try {localStorage.setItem('clearcall.selection', selected);} catch { /* Storage may be disabled. */ }
+    try {if(!ephemeral) localStorage.setItem('clearcall.selection', selected);} catch { /* Storage may be disabled. */ }
     request<Detail>('/transcripts/' + selected, {signal: controller.signal}).then(d => {if (!controller.signal.aborted) setDetail(d);}).catch(e => {if (!controller.signal.aborted) setDetailError(errorMessage(e));});
     return () => controller.abort();
   }, [selected, retry]);
@@ -60,6 +61,7 @@ export default function App() {
     <header className="app-header"><div className="brand"><FileText size={25} strokeWidth={1.7}/>Clearcall</div><button className="icon-button" aria-label="Help" onClick={() => setDialog('help')}><CircleHelp size={21}/></button></header>
     <main className={view === 'transcripts' && mobileReader && selected ? 'reading-mode' : ''}>
       <div className="study-header"><h1>Interview workspace</h1><button className="button primary" onClick={() => setDialog('upload')}><Plus size={19}/>Upload transcripts</button></div>
+      {ephemeral && <p className="analysis-note">Temporary workspace. Refreshing clears your interviews, drafts and results.</p>}
       {notice && <div className="notice" role="status"><span>{notice}</span><button className="icon-button" aria-label="Dismiss notification" onClick={() => setNotice('')}><X size={18}/></button></div>}
       {error && <div className="error-banner" role="alert"><span>{error}</span><button className="button text-button" onClick={() => {setLoading(true); refresh().catch(e => setError(errorMessage(e))).finally(() => setLoading(false));}}><RefreshCw size={16}/>Retry</button></div>}
       <nav className="workspace-tabs" aria-label="Workspace">{(['transcripts','analysis','ask'] as const).map(tab=><button key={tab} aria-current={view===tab?'page':undefined} onClick={()=>setView(tab)}>{tab==='transcripts'?'Transcripts':tab==='analysis'?'Guide answers':'Ask'}</button>)}</nav>

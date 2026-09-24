@@ -81,3 +81,11 @@ Live check: the configured key was detected. Corrected the generateContent JSON 
 ## Persistent drafts
 
 Ask and Guide answers save independent drafts synchronously to browser localStorage on each edit. Navigation, refresh, submission and configuration checks do not clear them. Clear draft (or deleting all text) removes the stored value. Loading the case-study guide is disabled while a guide draft exists. A memory fallback preserves navigation when browser storage fails, with a visible warning that refresh persistence is unavailable. Browser checks verified both drafts after navigation and refresh, independent clearing, and a cleared Ask draft remaining blank after refresh. Frontend typecheck/build passed. Storage is scoped to the same browser profile and origin; clearing browser site data removes drafts.
+
+
+## Public ephemeral mode
+
+- Public API tests verify session isolation, denied cross-workspace reads, isolated source download, invalidated tokens after deletion, blocked sample loader and foreign origins, and the global AI allowance.
+- 34 backend tests passed and production frontend built. Browser test uploaded a real supplied interview and typed an Ask draft; refresh returned an empty transcript library and empty question field.
+- The public entrypoint never opens the local user database. Temporary session directories are disposed after active requests/jobs finish, with idle/hard expiry fallback.
+- Local tests used Python 3.10. Render's Python 3.13 build and externally hosted HTTPS must still be verified after deployment. The anonymous demo has intentional capacity and provider limits; rate controls do not prevent a determined anonymous visitor from exhausting its shared allowance.

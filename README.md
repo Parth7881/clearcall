@@ -137,3 +137,14 @@ Groq hosts `openai/gpt-oss-120b`, selected for strict JSON-schema output and evi
 
 
 Additional supported import format: `Expert ID: EXP-05`, `Role: Systems Engineer`, and optional `Core Subject: Infrastructure`, followed by the same timestamped speaker turns. A missing Market in this ID-based format is recorded as Not specified, never inferred. Source bytes and quote offsets remain unchanged. Uploads show a selected-file count and accept up to 50 files, 2 MiB each and 50 MiB total. Invalid batches still save no files.
+
+
+## Free public demo on Render
+
+The public entrypoint is `app.public:create_public_app`, separate from the persistent local entrypoint. `render.yaml` selects a Free Python web service and exactly one worker. Connect the private GitHub repository, choose the codex/part1-redesign branch, and set GROQ_API_KEY as a Render secret. Never upload `.env` or local `data/`. The compiled frontend is committed, so the build command only installs requirements.lock.txt. `.python-version` requests the latest Python 3.13 patch on Render.
+
+Public mode requires no login. Every page load gets a random in-memory workspace token. Requests and source downloads require that token; visitors do not share interviews. Refresh clears the browser's interviews, results and drafts by starting a new workspace. Page exit requests cancellation and disposal of the old workspace; if that request fails, server cleanup expires idle workspaces after 15 minutes (checked every 30 seconds), or after one hour total. An in-flight provider request may finish before server-side temporary files are removed. Local development data is never used by the public entrypoint.
+
+To stay bounded on free compute, the demo allows four simultaneous temporary workspaces, 20 workspace creations per minute globally, and 100 model-generation attempts per rolling day per running instance. Each provider attempt can internally retry transient failures. Budgets reset when the free instance restarts; these are guardrails, not billing controls or protection against deliberate quota exhaustion. Set spending limits in the provider dashboard and retain the Free Render plan. Each workspace accepts up to 50 transcripts, subject to the existing upload-size limits. Missing configuration, busy capacity and provider quota failures are shown without exposing secrets.
+
+Render Free can sleep after 15 minutes idle and take about a minute to wake; its filesystem is ephemeral. No uptime guarantee or permanent history is provided. See https://render.com/docs/free for current allowances. HTTPS and the onrender.com hostname are supplied by Render. This is a public demo, not a multi-user service with durable accounts or data.

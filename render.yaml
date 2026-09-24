@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: clearcall
+    runtime: python
+    plan: free
+    branch: codex/part1-redesign
+    buildCommand: pip install -r requirements.lock.txt
+    startCommand: uvicorn app.public:create_public_app --factory --app-dir backend --host 0.0.0.0 --port $PORT --workers 1 --proxy-headers --forwarded-allow-ips '*'
+    healthCheckPath: /api/health
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: PUBLIC_DAILY_AI_CALLS
+        value: "100"

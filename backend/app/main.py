@@ -24,7 +24,7 @@ class AskRequest(BaseModel):
     transcript_ids: list[str] = Field(min_length=1,max_length=50)
     question: str = Field(min_length=1,max_length=2000)
 
-def create_app(data_dir: Path | None = None, provider=None) -> FastAPI:
+def create_app(data_dir: Path | None = None, provider=None, public_session=False) -> FastAPI:
     store = Store(data_dir or Path(os.environ.get('CLEARCALL_DATA_DIR', ROOT / 'data')))
     manager = AnalysisManager(store)
     @asynccontextmanager
@@ -32,12 +32,14 @@ def create_app(data_dir: Path | None = None, provider=None) -> FastAPI:
         yield
         manager.close()
     app = FastAPI(lifespan=lifespan, title='Clearcall', version='1.0.0', docs_url='/api/docs', redoc_url=None)
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=['127.0.0.1', 'localhost', 'testserver'])
+    app.state.analysis_manager = manager
+    if not public_session:
+        app.add_middleware(TrustedHostMiddleware, allowed_hosts=['127.0.0.1', 'localhost', 'testserver'])
 
     @app.middleware('http')
     async def local_origin(request: Request, call_next):
         origin = request.headers.get('origin')
-        if request.method == 'POST' and origin:
+        if request.method == 'POST' and origin and not public_session:
             parsed = urlparse(origin)
             if parsed.scheme not in ('http', 'https') or parsed.hostname not in ('127.0.0.1', 'localhost', 'testserver'):
                 return JSONResponse({'detail': 'Only the local app can upload files.'}, status_code=403)
@@ -46,6 +48,10 @@ def create_app(data_dir: Path | None = None, provider=None) -> FastAPI:
         response.headers['Referrer-Policy'] = 'same-origin'
         response.headers['X-Frame-Options'] = 'DENY'
         return response
+
+    @app.get('/api/runtime')
+    def runtime():
+        return {'ephemeral':public_session}
 
     @app.get('/api/health')
     def health():
@@ -78,6 +84,8 @@ def create_app(data_dir: Path | None = None, provider=None) -> FastAPI:
         try:
             if not 1 <= len(files) <= 50:
                 raise HTTPException(422, 'Choose between one and 50 transcripts.')
+            if public_session and len(store.all()) + len(files) > 50:
+                raise HTTPException(422, 'This temporary workspace supports 50 transcripts. Refresh to start a new workspace.')
             total_bytes = 0
             for file in files:
                 filename = (file.filename or 'transcript.txt').replace('\\', '/').split('/')[-1]

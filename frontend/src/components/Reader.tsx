@@ -1,3 +1,4 @@
+import { downloadSource } from '../api';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Search, FileText, X } from 'lucide-react';
 import type { Detail } from '../types';
@@ -38,7 +39,7 @@ export default function Reader({detail, onBack}: {detail: Detail; onBack: () => 
   return <section className="reader" aria-label="Transcript reader">
     <div className="reader-heading">
       <button className="button text-button mobile-back" onClick={onBack}><ArrowLeft size={18}/>Transcripts</button>
-      <div className="reader-title-row"><div><h2>{detail.expert}</h2><p className="reader-meta">{detail.role} <span>·</span> {detail.market}</p></div><a className="button source-button" aria-label="Original file" href={`/api/transcripts/${detail.id}/source`} download><FileText size={17}/><span>Original file</span></a></div>
+      <div className="reader-title-row"><div><h2>{detail.expert}</h2><p className="reader-meta">{detail.role} <span>·</span> {detail.market}</p></div><button className="button source-button" aria-label="Original file" onClick={()=>downloadSource(detail.id,detail.filename).catch(()=>window.alert('Source download failed. Please try again.'))}><FileText size={17}/><span>Original file</span></button></div>
       <div className="reader-tools"><div className="search-input"><Search size={18}/><input aria-label="Search this transcript" placeholder="Search this transcript" value={query} onChange={e => {setQuery(e.target.value); list.current?.scrollTo(0, 0);}}/>{query && <button className="clear-button" aria-label="Clear transcript search" onClick={() => setQuery('')}><X size={16}/></button>}</div>
         <label className="switch-label"><input type="checkbox" checked={expertOnly} onChange={e => {setExpertOnly(e.target.checked); list.current?.scrollTo(0, 0);}}/><span className="switch" aria-hidden="true"/>Expert only</label>
       </div>

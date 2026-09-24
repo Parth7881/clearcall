@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { request, errorMessage } from '../api';
+import { request, errorMessage, ephemeral } from '../api';
 import type { Transcript } from '../types';
 
 type Evidence = {transcript_id:string; passage_id:number; quote:string; expert:string; timestamp:string};
@@ -13,7 +13,7 @@ const draftMemory = new Map<string,string>();
 function useDraft(name:string) {
   const key = 'clearcall.draft.' + name;
   const [value,setValue] = useState(() => {
-    try {return localStorage.getItem(key) ?? draftMemory.get(key) ?? '';}
+    try {if(ephemeral) return draftMemory.get(key) ?? ''; return localStorage.getItem(key) ?? draftMemory.get(key) ?? '';}
     catch {return draftMemory.get(key) ?? '';}
   });
   const [saveError,setSaveError] = useState(false);
@@ -21,6 +21,7 @@ function useDraft(name:string) {
     setValue(next);
     draftMemory.set(key,next);
     try {
+      if(ephemeral) return;
       if(next) localStorage.setItem(key,next);
       else localStorage.removeItem(key);
       setSaveError(false);
@@ -75,7 +76,7 @@ export default function Analysis({transcripts, mode, onSource}:{transcripts:Tran
   return <section className="analysis-panel" id="workspace" tabIndex={-1} aria-label={mode==='ask'?'Ask interviews':'Interview analysis'}>
     <div className="analysis-controls">
       <h2>{mode==='ask'?'Ask':'Guide answers'}</h2>
-      {config && !config.configured && <div className="config-note"><p>Add GROQ_API_KEY to your local .env file to enable Groq.</p><button className="button secondary" onClick={configure}>Check configuration</button></div>}
+      {config && !config.configured && <div className="config-note"><p>{ephemeral?'AI is temporarily unavailable. Please try again later.':'Add GROQ_API_KEY to your local .env file to enable Groq.'}</p><button className="button secondary" onClick={configure}>Check configuration</button></div>}
       <details className="source-picker"><summary>{selected.length} interviews selected</summary><button className="button text-button" disabled={active(job)} onClick={()=>setSelected(selected.length?[]:transcripts.slice(0,50).map(t=>t.id))}>{selected.length?'Clear selection':'Select first 50'}</button>
         {transcripts.map(t=><label key={t.id}><input type="checkbox" checked={selected.includes(t.id)} disabled={active(job)||(!selected.includes(t.id)&&selected.length>=50)} onChange={e=>setSelected(s=>e.target.checked?[...s,t.id]:s.filter(id=>id!==t.id))}/><span>{t.expert}<small>{t.market}</small></span></label>)}
       </details>
