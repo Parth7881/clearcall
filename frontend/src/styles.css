@@ -202,3 +202,29 @@ dialog::backdrop { background: #20212469; }
   .study-header .button { width: 100%; }
   .reading-mode .study-header { display: none; }
 }
+
+.workspace-tabs{display:flex;gap:24px;border-bottom:1px solid #dadce0;margin-bottom:20px}
+.workspace-tabs button{background:none;border:0;padding:14px 4px;color:#5f6368;cursor:pointer;font:inherit;border-bottom:3px solid transparent}
+.workspace-tabs button[aria-current]{color:#1967d2;border-bottom-color:#1967d2}
+.analysis-panel{display:grid;grid-template-columns:300px minmax(0,1fr);background:white;border:1px solid #dadce0;border-radius:12px;min-height:520px}
+.analysis-controls{padding:24px;border-right:1px solid #e8eaed;display:flex;flex-direction:column;gap:20px;align-items:stretch}
+.analysis-controls h2{margin:0;font-size:22px;font-weight:500}
+.analysis-results{padding:28px;min-width:0;overflow-wrap:anywhere}
+.analysis-results>p{color:#5f6368}
+.analysis-panel summary{cursor:pointer;padding:8px 0;line-height:1.5}
+.analysis-field{display:flex;flex-direction:column;gap:8px;font-size:14px}
+.analysis-field textarea,.analysis-field select{font:inherit;font-size:16px;padding:12px;border:1px solid #dadce0;border-radius:6px;background:#fff;color:#202124;width:100%;box-sizing:border-box;resize:vertical}
+.source-picker{max-height:300px;overflow:auto}
+.source-picker label{display:flex;gap:12px;padding:10px 0;align-items:center;font-size:14px}
+.source-picker small{display:block;color:#5f6368;margin-top:4px}
+.source-picker input{width:18px;height:18px;accent-color:#1967d2}
+.analysis-note,.config-note{font-size:13px;color:#5f6368;line-height:1.6}
+.config-note p{margin-top:0}
+.analysis-answer{padding:12px 0 20px;border-bottom:1px solid #e8eaed;line-height:1.7;white-space:pre-line}
+.analysis-answer h3{font-size:16px;font-weight:500}
+.analysis-answer blockquote{margin:16px 0;padding:0 16px;border-left:3px solid #dadce0;color:#5f6368;font-size:14px}
+.analysis-answer blockquote .button{white-space:normal;text-align:left}
+.expert-analysis{border-bottom:1px solid #dadce0;padding:12px 0}
+.job-status{display:flex;align-items:center;justify-content:space-between;gap:12px;text-transform:capitalize;font-size:14px;margin-bottom:20px}
+.analysis-results progress{width:100%;accent-color:#1967d2}
+@media(max-width:760px){.analysis-panel{grid-template-columns:minmax(0,1fr)}.analysis-controls{border-right:0;border-bottom:1px solid #e8eaed;padding:20px}.analysis-results{padding:20px}.workspace-tabs{gap:22px}.analysis-controls>.button{min-height:44px}}

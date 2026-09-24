@@ -1,4 +1,4 @@
-# Clearcall — Part 1
+# Clearcall
 
 A local workspace for the Hasamex European Robotic Surgery Market interviews. Minimal white interface, desktop and mobile layouts, original text and timestamps, and a real persistent backend.
 
@@ -37,10 +37,10 @@ py -3 -m venv .venv
 
 On macOS/Linux use `python3 -m venv .venv` and `.venv/bin/python` in place of the Windows Python path.
 
-## What works in Part 1
+## What works
 
 - Upload interview files; repeated uploads of identical contents do not duplicate them.
-- Upload up to five UTF-8 `.txt` files at once, up to 2 MiB per file.
+- Upload up to 50 UTF-8 `.txt` files at once, up to 2 MiB per file and 50 MiB total per upload.
 - Keep transcripts after a server restart in `data/clearcall.sqlite3`.
 - Find experts by name, role or market; search within a transcript; show expert passages only.
 - Jump to a timestamp and reopen the same passage through the address bar link.
@@ -48,7 +48,24 @@ On macOS/Linux use `python3 -m venv .venv` and `.venv/bin/python` in place of th
 - Use the library and reader on mobile with a Back to transcripts action.
 - Receive usable validation errors; an invalid batch saves none of its files.
 
-There are no AI answers in Part 1. Guide answers and citations belong to Part 2; cross-call synthesis and Q&A belong to Part 3. No account, dashboard, billing, or unrelated feature has been added.
+## Gemini analysis
+
+Add your key to a local `.env` in the project root (use `.env.example` as a template):
+
+```text
+GEMINI_API_KEY=your_key_here
+GEMINI_MODEL=gemini-3.8-flash
+```
+
+Get a key from https://aistudio.google.com/apikey. Never commit `.env`. Open Analysis and click Check configuration; settings are reread without a restart. Keys stay on the backend. Running Analysis or Ask sends selected interview text to Google Gemini and may incur provider charges.
+
+Select up to 50 interviews. Analysis answers the six original guide questions (editable), then compares common themes and differences. Ask retrieves up to three relevant 1,200-character expert excerpts from each selected interview. This is lexical retrieval, not an exhaustive reading for every question. Quote links open the original passage.
+
+One background job runs at a time, processing interviews sequentially to bound provider traffic. Results and per-interview caches persist in SQLite. Cancel stops after the current provider request; restarting marks unfinished runs interrupted. Run again to reuse completed cached interviews and retry failures. Synthesis runs again each time. Saved runs remain available through the selector.
+
+The server checks that each quoted span exists in the cited expert passage and computes its source offsets. This checks attribution, not whether the model's reasoning follows from the quote: review important conclusions. Unsupported or invalidly cited answers display an insufficient-evidence message. Very long interviews are split into bounded excerpts; cross-source synthesis uses compact validated answers and can miss nuance.
+
+Automated tests cover 35-interview ingestion and jobs, caching, restart persistence, invalid citations, cancellation, partial failures and mocked Gemini HTTP responses. No live Gemini call has been validated yet; configure a key and review a small run before analyzing a large batch. API schema reference: https://ai.google.dev/gemini-api/docs/generate-content/structured-output
 
 ## Transcript format
 
@@ -98,10 +115,10 @@ See `docs/QA.md` for the browser checklist and test results, and `docs/ARCHITECT
 
 ## Data and upgrades
 
-The default data directory is `data` beside this README. To choose another directory, pass `-DataDir` to the startup script or set `CLEARCALL_DATA_DIR` in the terminal. `.env.example` documents this variable; Part 1 does not auto-load `.env` files. The ZIP contains no user database or secrets.
+The default data directory is `data` beside this README. To choose another directory, pass `-DataDir` to the startup script or set `CLEARCALL_DATA_DIR` in the terminal. Gemini settings are loaded from the local `.env`; the data-directory setting remains a terminal/startup-script option. The ZIP contains no user database or secrets.
 
-Later parts will use the same **clearcall** project root. Back up `data` and any future `.env` before replacing source files. Do not nest Part 2 inside Part 1. Future database changes need an explicit schema migration. Keep the server bound to 127.0.0.1: this version is a personal local tool, with no authentication or multi-user hosting layer.
+Later parts will use the same **clearcall** project root. Back up `data` and any future `.env` before replacing source files. Do not nest Part 2 inside Part 1. Schema v2 adds analysis jobs and cache tables without rewriting transcripts. Keep the server bound to 127.0.0.1: this version is a personal local tool, with no authentication or multi-user hosting layer.
 
 ## AI assistance disclosure
 
-This implementation was created with OpenAI Codex assistance, including planning, coding, tests, and a generated visual reference. The final interface is native React/CSS, not an image. Source transcripts were supplied by the case-study pack and are not AI-generated by the application. Part 1 sends no transcript data to an AI provider. Review the code, run the checks, and describe assistance accurately in your final case-study submission.
+This implementation was created with OpenAI Codex assistance, including planning, coding, tests, and a generated visual reference. The final interface is native React/CSS, not an image. Source transcripts were supplied by the case-study pack and are not AI-generated by the application. The reader stays local; Analysis and Ask send selected source text to Gemini when you run them. Review the code, run the checks, and describe assistance accurately in your final case-study submission.

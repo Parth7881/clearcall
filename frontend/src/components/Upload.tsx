@@ -13,7 +13,7 @@ export default function Upload({onClose, onSuccess}: {onClose: () => void; onSuc
   function choose(selected: File[]) {
     const next = [...files];
     for (const file of selected) if (!next.some(f => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified)) next.push(file);
-    if (next.length > 5) {setError('Choose up to five files per upload.'); return;}
+    if (next.length > 50) {setError('Choose up to 50 files per upload.'); return;}
     if (next.some(f => !f.name.toLowerCase().endsWith('.txt') || f.size > 2 * 1024 * 1024)) {setError('Choose .txt files, each 2 MB or smaller.'); return;}
     setFiles(next); setError('');
   }
@@ -27,7 +27,7 @@ export default function Upload({onClose, onSuccess}: {onClose: () => void; onSuc
   return <Dialog title="Upload transcripts" onClose={onClose} busy={busy}>
     <p className="dialog-intro">Add your interview transcripts to this workspace.</p>
     <div className={'drop-zone' + (dragging ? ' dragging' : '')} onDragOver={e => {e.preventDefault(); if (!busy) setDragging(true);}} onDragLeave={() => setDragging(false)} onDrop={e => {e.preventDefault(); setDragging(false); if (!busy) choose(Array.from(e.dataTransfer.files));}}>
-      <UploadIcon size={28} strokeWidth={1.5}/><strong>Drop your files here</strong><span>UTF-8 .txt · Up to 5 files · 2 MB each</span>
+      <UploadIcon size={28} strokeWidth={1.5}/><strong>Drop your files here</strong><span>UTF-8 .txt · Up to 50 files · 2 MB each</span>
       <button className="button secondary" disabled={busy} onClick={() => input.current?.click()}>Choose files</button>
       <input ref={input} className="visually-hidden" type="file" tabIndex={-1} aria-label="Transcript files" accept=".txt,text/plain" multiple onChange={e => {choose(Array.from(e.target.files || [])); e.target.value = '';}}/>
     </div>

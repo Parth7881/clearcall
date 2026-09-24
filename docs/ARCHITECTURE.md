@@ -44,3 +44,24 @@ Transcripts store an immutable ID, source hash, original filename, expert, role,
 For Part 2, use a backend-only model provider adapter. For three short transcripts, explicit full-context extraction is simpler than a vector database. Validate every returned quote against its cited source span. Unsupported claims should be marked as insufficient evidence. Preserve conditions and geographic scope when comparing growth estimates; a centre-level estimate is not automatically a market-wide contradiction.
 
 At 30+ transcripts, add queued ingestion/extraction, bounded concurrency, per-source caching and passage retrieval when the context budget requires it. Keep original source IDs and offsets through that change. These are architecture notes, not extra implemented features.
+
+
+## Implemented analysis extension
+
+```mermaid
+flowchart LR
+  UI[Analysis / Ask] --> API[FastAPI: validate 1–50 selected IDs]
+  API --> Job[One background worker]
+  Job --> DB[(SQLite v2 jobs and per-source cache)]
+  Job --> Extract[Chunk expert passages / retrieve relevant excerpts]
+  Extract --> Gemini[Backend Gemini adapter]
+  Gemini --> Gate[Exact quote and expert-passage validation]
+  Gate --> Results[Persist results and source offsets]
+  Results --> UI
+```
+
+This supersedes the future-work notes above. Uploads accept 50 files, 2 MiB each and 50 MiB per batch. Jobs process one source at a time, persist progress, support cancellation after the current request and mark interrupted work on restart. Re-running reuses successful source caches. Only one server worker/process should use a project database: coordination is in-process, not a distributed queue.
+
+Ask scores all expert excerpts by query-word overlap, sending the top three per interview (up to 1,200 characters each). It reports excerpt coverage. A vector database and semantic embeddings are not implemented. Synthesis uses compact validated answers and requires two distinct source IDs for each displayed comparison. Distinct IDs do not establish independent people if duplicate experts are uploaded under different source files.
+
+Quote validation prevents fabricated spans and interviewer attribution; it cannot prove semantic entailment. The UI renders output as plain React text. Provider errors are sanitized, keys are loaded backend-only, and the local app remains bound to 127.0.0.1. Live model quality and quota behavior still require a user-configured key.

@@ -45,3 +45,12 @@ One deferred minor: search highlighting can be shifted for unusual Unicode chara
 ## Your acceptance check
 
 Extract the ZIP, follow the README, load samples, switch experts, search, toggle Expert only, jump to a timestamp, download a source, then restart the server. Confirm the saved library and the visual design before Part 2.
+
+
+## Gemini and 30+ transcript extension — 2026-09-24
+
+- 24 backend tests pass: 35-file atomic import; 35-source jobs; cached repeat analysis; Q&A; persisted results; missing key; exact quote/source/role checks; long passage splitting; sanitized Gemini transport errors; cancellation and busy responses; interrupted jobs; partial source failures; request limits.
+- Production frontend typecheck/build passes.
+- Browser verified with an isolated 35-interview database: source selection, missing-key state, saved analysis, and citation navigation to the correct 00:18 passage. Test-only provider fixtures were confined to ignored QA data; no fake results are installed in the user's database.
+- Mobile Ask and citation reader checked at 390px viewport: no horizontal overflow. Configuration-dependent buttons remain disabled without a key.
+- Live Gemini requests, answer quality and real quota behavior are not verified. API key configuration was explicitly deferred by the user.

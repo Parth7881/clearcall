@@ -53,7 +53,7 @@ def test_unicode_crlf():
 def test_limits_and_missing(client):
     assert client.post('/api/transcripts', files=[('files', ('x.pdf', RAW))]).status_code == 422
     assert client.post('/api/transcripts', files=[('files', ('x.txt', b'x' * (2 * 1024 * 1024 + 1)))]).status_code == 422
-    assert client.post('/api/transcripts', files=[('files', (str(i) + '.txt', RAW)) for i in range(6)]).status_code == 422
+    assert client.post('/api/transcripts', files=[('files', (str(i) + '.txt', RAW)) for i in range(51)]).status_code == 422
     assert client.get('/api/transcripts/missing').status_code == 404
     assert client.get('/api/transcripts/missing/source').status_code == 404
 

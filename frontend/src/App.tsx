@@ -5,6 +5,7 @@ import type { Detail, ImportResult, Transcript } from './types';
 import Dialog from './components/Dialog';
 import Upload from './components/Upload';
 import Reader from './components/Reader';
+import Analysis from './components/Analysis';
 
 function savedSelection() {
   const hash = new URLSearchParams(location.hash.slice(1)).get('transcript');
@@ -12,6 +13,7 @@ function savedSelection() {
 }
 
 export default function App() {
+  const [view,setView] = useState<'transcripts'|'analysis'|'ask'>('transcripts');
   const [transcripts, setTranscripts] = useState<Transcript[]>([]);
   const [selected, setSelected] = useState(savedSelection);
   const [detail, setDetail] = useState<Detail | null>(null);
@@ -56,17 +58,18 @@ export default function App() {
   return <>
     <a href="#workspace" className="skip-link">Skip to workspace</a>
     <header className="app-header"><div className="brand"><FileText size={25} strokeWidth={1.7}/>Clearcall</div><button className="icon-button" aria-label="Help" onClick={() => setDialog('help')}><CircleHelp size={21}/></button></header>
-    <main className={mobileReader && selected ? 'reading-mode' : ''}>
+    <main className={view === 'transcripts' && mobileReader && selected ? 'reading-mode' : ''}>
       <div className="study-header"><h1>European Robotic Surgery Market</h1><button className="button primary" onClick={() => setDialog('upload')}><Plus size={19}/>Upload transcripts</button></div>
       {notice && <div className="notice" role="status"><span>{notice}</span><button className="icon-button" aria-label="Dismiss notification" onClick={() => setNotice('')}><X size={18}/></button></div>}
       {error && <div className="error-banner" role="alert"><span>{error}</span><button className="button text-button" onClick={() => {setLoading(true); refresh().catch(e => setError(errorMessage(e))).finally(() => setLoading(false));}}><RefreshCw size={16}/>Retry</button></div>}
-      <div id="workspace" tabIndex={-1} className={'workspace' + (mobileReader && selected ? ' showing-reader' : '')}>
+      <nav className="workspace-tabs" aria-label="Workspace">{(['transcripts','analysis','ask'] as const).map(tab=><button key={tab} aria-current={view===tab?'page':undefined} onClick={()=>setView(tab)}>{tab==='transcripts'?'Transcripts':tab==='analysis'?'Analysis':'Ask'}</button>)}</nav>
+      {view !== 'transcripts' ? <Analysis key={view} transcripts={transcripts} mode={view} onSource={(id,passage)=>{setSelected(id);setMobileReader(true);location.hash=`transcript=${id}&passage=${passage}`;setView('transcripts');}}/> : <div id="workspace" tabIndex={-1} className={'workspace' + (mobileReader && selected ? ' showing-reader' : '')}>
         <aside className="library" aria-label="Transcript library"><div className="library-heading"><h2>Transcripts</h2><div className="search-input"><Search size={18}/><input aria-label="Find an expert or market" placeholder="Find an expert or market" value={query} onChange={e => setQuery(e.target.value)}/>{query && <button className="clear-button" aria-label="Clear library search" onClick={() => setQuery('')}><X size={16}/></button>}</div></div>
           <div className="transcript-list">{loading ? <div className="loading-state" role="status"><LoaderCircle className="spin" size={22}/>Loading transcripts…</div> : filtered.map((t) => <button key={t.id} className={'transcript-card' + (selected === t.id ? ' selected' : '')} aria-pressed={selected === t.id} onClick={() => select(t.id)}><span className="card-text"><strong>{t.expert}</strong><span>{t.role}</span><small>{t.market}</small></span></button>)}
           {!loading && !filtered.length && <div className="library-empty"><p>{query ? 'No matching transcripts.' : 'No transcripts yet.'}</p>{query && <button className="button text-button" onClick={() => setQuery('')}>Clear search</button>}</div>}</div>
         </aside>
         {selected ? detail && detail.id === selected ? <Reader key={detail.id} detail={detail} onBack={() => setMobileReader(false)}/> : <section className="reader reader-status"><button className="button text-button mobile-back" onClick={() => setMobileReader(false)}><ArrowLeft size={18}/>Transcripts</button>{detailError ? <div className="no-results" role="alert"><p>{detailError}</p><button className="button secondary" onClick={() => setRetry(n => n + 1)}>Try again</button></div> : <div className="loading-state" role="status"><LoaderCircle size={24} className="spin"/>Opening transcript…</div>}</section> : <section className="empty-reader"><FileText size={32} strokeWidth={1.4}/><h2>No transcript selected</h2><button className="button secondary" onClick={() => setDialog('upload')}>Upload transcripts</button></section>}
-      </div>
+      </div>}
     </main>
     {dialog === 'upload' && <Upload onClose={() => setDialog(null)} onSuccess={imported}/>}
     {dialog === 'help' && <Dialog title="Transcript help" onClose={() => setDialog(null)}><div className="help-content"><p>Upload UTF-8 .txt files, up to 2 MB each. Include Expert, Role and Market headers, then a timestamp and speaker for each passage.</p><p>Search within an interview or select a timestamp to jump to a passage. Use “Original file” to download the transcript.</p></div><div className="dialog-footer"><button className="button primary" onClick={() => setDialog(null)}>Close</button></div></Dialog>}
