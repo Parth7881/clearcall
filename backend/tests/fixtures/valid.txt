@@ -1,0 +1,9 @@
+Expert: Test Researcher
+Role: Research Lead
+Market: Test market
+
+00:00
+Interviewer: What is the constraint?
+
+00:10
+Test Researcher: Training capacity limits utilisation.
