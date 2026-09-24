@@ -54,14 +54,14 @@ flowchart LR
   API --> Job[One background worker]
   Job --> DB[(SQLite v2 jobs and per-source cache)]
   Job --> Extract[Chunk expert passages / retrieve relevant excerpts]
-  Extract --> Gemini[Backend Gemini adapter]
-  Gemini --> Gate[Exact quote and expert-passage validation]
+  Extract --> Groq[Backend Groq adapter]
+  Groq --> Gate[Exact quote and expert-passage validation]
   Gate --> Results[Persist results and source offsets]
   Results --> UI
 ```
 
 This supersedes the future-work notes above. Uploads accept 50 files, 2 MiB each and 50 MiB per batch. Jobs process one source at a time, persist progress, support cancellation after the current request and mark interrupted work on restart. Re-running reuses successful source caches. Only one server worker/process should use a project database: coordination is in-process, not a distributed queue.
 
-Ask scores all expert excerpts by query-word overlap, sending the top three per interview (up to 1,200 characters each). It reports excerpt coverage. A vector database and semantic embeddings are not implemented. Synthesis uses compact validated answers and requires two distinct source IDs for each displayed comparison. Distinct IDs do not establish independent people if duplicate experts are uploaded under different source files.
+Ask scores expert excerpts by query-word overlap, reserves one per interview, then fills a 64,000-character budget with further excerpts. Short interviews fit in full; each excerpt is at most 1,200 characters. It reports excerpt coverage. A vector database and semantic embeddings are not implemented. Synthesis uses compact validated answers and requires two distinct source IDs for each displayed comparison. Distinct IDs do not establish independent people if duplicate experts are uploaded under different source files.
 
-Quote validation prevents fabricated spans and interviewer attribution; it cannot prove semantic entailment. The UI renders output as plain React text. Provider errors are sanitized, keys are loaded backend-only, and the local app remains bound to 127.0.0.1. Live model quality and quota behavior still require a user-configured key.
+Quote validation prevents fabricated spans and interviewer attribution; it cannot prove semantic entailment. The UI renders output as plain React text. Provider errors are sanitized, keys are loaded backend-only, and the local app remains bound to 127.0.0.1. Groq uses strict JSON-schema responses; exact quote checks remain server-side. Provider quotas and retrieval coverage remain limitations.

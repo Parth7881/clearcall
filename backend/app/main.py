@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from pydantic import BaseModel, Field, StringConstraints
 from typing import Annotated
 from .analysis import AnalysisManager, QUESTIONS
-from .gemini import GeminiProvider, AIError
+from .groq import GroqProvider, AIError
 import json
 import os
 from pathlib import Path
@@ -105,15 +105,15 @@ def create_app(data_dir: Path | None = None, provider=None) -> FastAPI:
 
     @app.get('/api/analysis/config')
     def config():
-        current = provider or GeminiProvider(ROOT)
+        current = provider or GroqProvider(ROOT)
         return {'configured':current.configured,'model':current.model,'questions':QUESTIONS,'max_sources':50}
 
     def submit(body, ask=False):
         ids = list(dict.fromkeys(body.transcript_ids))
         rows = {i:find(i) for i in ids}
         for row in rows.values(): row['passages'] = json.loads(row['passages'])
-        current = provider or GeminiProvider(ROOT)
-        if not current.configured: raise HTTPException(503,'Add GEMINI_API_KEY to your local .env file to enable analysis.')
+        current = provider or GroqProvider(ROOT)
+        if not current.configured: raise HTTPException(503,'Add GROQ_API_KEY to your local .env file to enable analysis.')
         try:
             return manager.start(current,rows,question=body.question.strip()) if ask else manager.start(current,rows,questions=[q.strip() for q in body.questions])
         except AIError as exc: raise HTTPException(409,str(exc)) from exc

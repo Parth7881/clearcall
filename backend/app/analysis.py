@@ -5,7 +5,7 @@ import re
 import threading
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-from .gemini import AIError
+from .groq import AIError
 
 QUESTIONS = ['How would you describe current adoption of robotic surgery in your market?',
              'What are the main barriers to adoption?',
@@ -85,13 +85,19 @@ class AnalysisManager:
             job['status'] = 'running'; self.store.save_job(job)
             if job['kind'] == 'ask':
                 words = set(re.findall(r'\w+',job['question'].lower()))
-                selected = []
+                selected, extra = [], []
                 count = 0
                 for row in rows.values():
                     pieces = [p for chunk in chunk_passages(row['passages'],1200) for p in chunk]
                     count += len(pieces)
                     pieces.sort(key=lambda p:len(words & set(re.findall(r'\w+',p['text'].lower()))),reverse=True)
-                    selected.extend({**p,'transcript_id':row['id']} for p in pieces[:3])
+                    selected.extend({**p,'transcript_id':row['id']} for p in pieces[:1])
+                    extra.extend({**p,'transcript_id':row['id']} for p in pieces[1:])
+                extra.sort(key=lambda p:len(words & set(re.findall(r'\w+',p['text'].lower()))),reverse=True)
+                used = sum(len(p['text']) for p in selected)
+                for p in extra:
+                    if used + len(p['text']) <= 64000:
+                        selected.append(p); used += len(p['text'])
                 context = {k:{**v,'passages':[p for p in selected if p['transcript_id']==k]} for k,v in rows.items()}
                 value = provider.generate('ask',{'question':job['question'],'passages':selected},ANSWER)
                 job['result'] = {'answer':validate_answer(value,context),'passages_searched':count,'passages_used':len(selected)}
@@ -102,7 +108,7 @@ class AnalysisManager:
                 for row in rows.values():
                     if self.cancel.is_set(): break
                     try:
-                        key = hashlib.sha256(json.dumps([row['id'],row['digest'],job['questions'],provider.model,'v2']).encode()).hexdigest()
+                        key = hashlib.sha256(json.dumps([row['id'],row['digest'],job['questions'],provider.model,'groq-v3']).encode()).hexdigest()
                         result = self.store.cached(key)
                         if result is None:
                             grouped = [[] for _ in job['questions']]
@@ -111,7 +117,7 @@ class AnalysisManager:
                                 value = provider.generate('extract',{'transcript_id':row['id'],'expert':row['expert'],'market':row['market'],
                                     'questions':job['questions'],'passages':chunk},EXTRACT)
                                 answers = value.get('answers')
-                                if not isinstance(answers,list): raise AIError('Gemini returned an invalid answer list.')
+                                if not isinstance(answers,list): raise AIError('Groq returned an invalid answer list.')
                                 for answer in answers:
                                     index = answer.get('question_index') if isinstance(answer,dict) else None
                                     if type(index) is int and 0 <= index < len(grouped):
@@ -128,8 +134,8 @@ class AnalysisManager:
                         failures.append({'expert':row['expert'],'error':str(exc)})
                     job['completed'] += 1; self.store.save_job(job)
                 if results and not self.cancel.is_set():
-                    compact = [{'expert':r['expert'],'answers':[{'answer':a['answer'][:500],
-                        'evidence':[{**e,'quote':e['quote'][:500]} for e in a['evidence'][:1]]} for a in r['answers']]} for r in results]
+                    compact = [{'expert':r['expert'],'market':r['market'],'answers':[{'question':a['question'],'answer':a['answer'][:500],
+                        'evidence':[{'transcript_id':e['transcript_id'],'passage_id':e['passage_id'],'quote':e['quote'][:500]} for e in a['evidence'][:2]]} for a in r['answers']]} for r in results]
                     try:
                         synthesis = provider.generate('synthesize',{'sources':compact},SYNTHESIS)
                         for kind in ('themes','differences'):

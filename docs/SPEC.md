@@ -29,3 +29,8 @@ React + TypeScript + Vite frontend, FastAPI/Pydantic backend, Python sqlite3. A 
 ## Acceptance
 
 All supplied files load once and persist across app restarts. Upload errors leave no partial records. Source download equals uploaded bytes. Switching experts, searching, toggling expert-only and opening a timestamp work together. Mobile at 390px has no horizontal overflow; keyboard users can complete upload and close dialogs. No uncaught browser errors on the primary workflows. The delivered ZIP excludes local databases, environments, caches, dependencies and secrets; contains source, lockfiles, setup script, samples, tests, built frontend and documentation.
+
+
+## Current approved extension (supersedes Part 1 limits)
+
+The user requested 30+ transcript support, AI analysis and then a switch to Groq. Upload and analysis accept up to 50 selected transcripts; uploads have a 50 MiB aggregate limit and retain the 2 MiB per-file limit. Guide answers, source quotes, cross-interview themes/differences and Q&A are implemented in the same permanent project. Groq replaces Gemini as the only active provider. The interface and disclosures name Groq; the key is backend-only in ignored `.env`. Final-stage work verifies these existing case-study features and updates the technical-round walkthrough, without adding unrelated product features.

@@ -54,12 +54,12 @@ export default function Analysis({transcripts, mode, onSource}:{transcripts:Tran
   return <section className="analysis-panel" id="workspace" tabIndex={-1} aria-label={mode==='ask'?'Ask interviews':'Interview analysis'}>
     <div className="analysis-controls">
       <h2>{mode==='ask'?'Ask interviews':'Analysis'}</h2>
-      {config && !config.configured && <div className="config-note"><p>Add GEMINI_API_KEY to your local .env file to enable Gemini.</p><button className="button secondary" onClick={configure}>Check configuration</button></div>}
+      {config && !config.configured && <div className="config-note"><p>Add GROQ_API_KEY to your local .env file to enable Groq.</p><button className="button secondary" onClick={configure}>Check configuration</button></div>}
       <details className="source-picker"><summary>{selected.length} interviews selected</summary><button className="button text-button" disabled={active(job)} onClick={()=>setSelected(selected.length?[]:transcripts.slice(0,50).map(t=>t.id))}>{selected.length?'Clear selection':'Select first 50'}</button>
         {transcripts.map(t=><label key={t.id}><input type="checkbox" checked={selected.includes(t.id)} disabled={active(job)||(!selected.includes(t.id)&&selected.length>=50)} onChange={e=>setSelected(s=>e.target.checked?[...s,t.id]:s.filter(id=>id!==t.id))}/><span>{t.expert}<small>{t.market}</small></span></label>)}
       </details>
       {mode==='ask'?<label className="analysis-field">Question<textarea rows={3} maxLength={2000} value={question} onChange={e=>setQuestion(e.target.value)} placeholder="What limits adoption across these interviews?"/></label>:<details><summary>Analysis questions</summary><label className="analysis-field">One question per line (up to 12)<textarea rows={9} value={questions} onChange={e=>setQuestions(e.target.value)}/></label></details>}
-      <p className="analysis-note">Selected interview text is sent to Gemini. Provider usage charges may apply.</p>
+      <p className="analysis-note">Selected interview text is sent to Groq. Provider usage charges may apply.</p>
       <button className="button primary" disabled={!config?.configured||!selected.length||active(job)||busy||(mode==='ask'?!question.trim():!questions.trim())} onClick={start}>{busy?'Starting…':mode==='ask'?'Ask':'Run analysis'}</button>
       {history.filter(j=>j.kind===mode).length>0 && <label className="analysis-field">Saved runs<select value={job?.id||''} disabled={active(job)||busy} onChange={async e=>{try{setJob(await request<Job>('/analysis/jobs/'+e.target.value));}catch(err){setError(errorMessage(err));}}}><option value="" disabled>Select a run</option>{history.filter(j=>j.kind===mode).map((j,i)=><option key={j.id} value={j.id}>Run {history.filter(j=>j.kind===mode).length-i} · {j.total} interviews{j.question?' · '+j.question.slice(0,40):''}</option>)}</select></label>}
     </div>

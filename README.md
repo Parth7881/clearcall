@@ -48,24 +48,24 @@ On macOS/Linux use `python3 -m venv .venv` and `.venv/bin/python` in place of th
 - Use the library and reader on mobile with a Back to transcripts action.
 - Receive usable validation errors; an invalid batch saves none of its files.
 
-## Gemini analysis
+## Groq analysis
 
 Add your key to a local `.env` in the project root (use `.env.example` as a template):
 
 ```text
-GEMINI_API_KEY=your_key_here
-GEMINI_MODEL=gemini-3.8-flash
+GROQ_API_KEY=your_key_here
+GROQ_MODEL=openai/gpt-oss-120b
 ```
 
-Get a key from https://aistudio.google.com/apikey. Never commit `.env`. Open Analysis and click Check configuration; settings are reread without a restart. Keys stay on the backend. Running Analysis or Ask sends selected interview text to Google Gemini and may incur provider charges.
+Get a key from https://console.groq.com/keys. Never commit `.env`. Open Analysis and click Check configuration; settings are reread without a restart. Keys stay on the backend. Running Analysis or Ask sends selected interview text to Groq and may incur provider charges.
 
-Select up to 50 interviews. Analysis answers the six original guide questions (editable), then compares common themes and differences. Ask retrieves up to three relevant 1,200-character expert excerpts from each selected interview. This is lexical retrieval, not an exhaustive reading for every question. Quote links open the original passage.
+Select up to 50 interviews. Analysis answers the six original guide questions (editable), then compares common themes and differences. Ask splits expert passages into excerpts of up to 1,200 characters, includes the highest-ranked excerpt from every selected interview, then adds relevant excerpts within a 64,000-character budget. Short interviews can fit in full. This is lexical retrieval, not an exhaustive reading for every question. Quote links open the original passage.
 
 One background job runs at a time, processing interviews sequentially to bound provider traffic. Results and per-interview caches persist in SQLite. Cancel stops after the current provider request; restarting marks unfinished runs interrupted. Run again to reuse completed cached interviews and retry failures. Synthesis runs again each time. Saved runs remain available through the selector.
 
 The server checks that each quoted span exists in the cited expert passage and computes its source offsets. This checks attribution, not whether the model's reasoning follows from the quote: review important conclusions. Unsupported or invalidly cited answers display an insufficient-evidence message. Very long interviews are split into bounded excerpts; cross-source synthesis uses compact validated answers and can miss nuance.
 
-Automated tests cover 35-interview ingestion and jobs, caching, restart persistence, invalid citations, cancellation, partial failures and mocked Gemini HTTP responses. No live Gemini call has been validated yet; configure a key and review a small run before analyzing a large batch. API schema reference: https://ai.google.dev/gemini-api/docs/generate-content/structured-output
+Automated tests cover 35-interview ingestion and jobs, caching, restart persistence, invalid citations, cancellation, partial failures and mocked Groq HTTP responses. Live verification results are recorded in docs/QA.md. Review a small run before analyzing a large batch; account rate and token limits can require retries. API schema reference: https://console.groq.com/docs/structured-outputs
 
 ## Transcript format
 
@@ -115,10 +115,22 @@ See `docs/QA.md` for the browser checklist and test results, and `docs/ARCHITECT
 
 ## Data and upgrades
 
-The default data directory is `data` beside this README. To choose another directory, pass `-DataDir` to the startup script or set `CLEARCALL_DATA_DIR` in the terminal. Gemini settings are loaded from the local `.env`; the data-directory setting remains a terminal/startup-script option. The ZIP contains no user database or secrets.
+The default data directory is `data` beside this README. To choose another directory, pass `-DataDir` to the startup script or set `CLEARCALL_DATA_DIR` in the terminal. Groq settings are loaded from the local `.env`; the data-directory setting remains a terminal/startup-script option. The ZIP contains no user database or secrets.
 
 Later parts will use the same **clearcall** project root. Back up `data` and any future `.env` before replacing source files. Do not nest Part 2 inside Part 1. Schema v2 adds analysis jobs and cache tables without rewriting transcripts. Keep the server bound to 127.0.0.1: this version is a personal local tool, with no authentication or multi-user hosting layer.
 
 ## AI assistance disclosure
 
-This implementation was created with OpenAI Codex assistance, including planning, coding, tests, and a generated visual reference. The final interface is native React/CSS, not an image. Source transcripts were supplied by the case-study pack and are not AI-generated by the application. The reader stays local; Analysis and Ask send selected source text to Gemini when you run them. Review the code, run the checks, and describe assistance accurately in your final case-study submission.
+This implementation was created with OpenAI Codex assistance, including planning, coding, tests, and a generated visual reference. The final interface is native React/CSS, not an image. Source transcripts were supplied by the case-study pack and are not AI-generated by the application. The reader stays local; Analysis and Ask send selected source text to Groq when you run them. Review the code, run the checks, and describe assistance accurately in your final case-study submission.
+
+
+## Technical-round walkthrough
+
+1. Upload the three supplied interviews from `backend/samples`.
+2. Open Analysis, check the six original guide questions, and run all three interviews.
+3. Expand an expert to inspect their six answers. Click a quote citation to verify the exact original text and timestamp.
+4. Review Common themes and Differences. Compare the Germany-wide growth estimate with France's stronger-centre estimate without treating different scopes as a contradiction.
+5. Open Ask and ask how budgets and ROI influence purchasing. Verify the cited experts and passages.
+6. Explain scaling: 50-file atomic imports, bounded source chunks, one background job, persistent progress, per-source caching and retrieval across selected interviews. Rate limits remain account-dependent; 50-source support does not mean 50 simultaneous provider calls.
+
+Groq hosts `openai/gpt-oss-120b`, selected for strict JSON-schema output and evidence extraction. This requires a Groq key, not an OpenAI key. The adapter retries transient failures and honors numeric Retry-After delays up to 60 seconds. Longer quota restrictions are returned as an actionable error; successful source work remains cached. No automatic provider fallback sends your interviews elsewhere.

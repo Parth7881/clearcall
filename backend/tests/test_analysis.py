@@ -82,7 +82,7 @@ def test_35_source_job_cache_qa_and_restart(tmp_path):
         assert c.get('/api/analysis/jobs/' + saved_id).json()['completed'] == 35
 
 def test_missing_key_and_unknown_sources(tmp_path,monkeypatch):
-    monkeypatch.delenv('GEMINI_API_KEY',raising=False)
+    monkeypatch.delenv('GROQ_API_KEY',raising=False)
     monkeypatch.setenv('CLEARCALL_CONFIG_FILE',str(tmp_path/'absent.env'))
     with TestClient(create_app(tmp_path)) as c:
         c.post('/api/samples')
@@ -94,14 +94,14 @@ def test_missing_key_and_unknown_sources(tmp_path,monkeypatch):
 
 def test_provider_transport_and_secret_redaction(tmp_path,monkeypatch):
     import httpx
-    from app.gemini import GeminiProvider, AIError
-    monkeypatch.setenv('GEMINI_API_KEY','test-secret-only')
+    from app.groq import GroqProvider, AIError
+    monkeypatch.setenv('GROQ_API_KEY','test-secret-only')
     def transport(request):
-        assert request.headers['x-goog-api-key']=='test-secret-only'
+        assert request.headers['authorization']=='Bearer test-secret-only'
         body=json.loads(request.content)
-        assert body['generationConfig']['responseMimeType']=='application/json'
-        return httpx.Response(200,json={'candidates':[{'finishReason':'STOP','content':{'parts':[{'text':'{"answer":"","evidence":[]}'}]}}]})
-    p=GeminiProvider(tmp_path,httpx.MockTransport(transport))
+        assert body['response_format']['json_schema']['strict'] is True
+        return httpx.Response(200,json={'choices':[{'finish_reason':'stop','message':{'content':'{"answer":"","evidence":[]}'}}]})
+    p=GroqProvider(tmp_path,httpx.MockTransport(transport))
     assert p.generate('ask',{}, {})=={'answer':'','evidence':[]}
     p.transport=httpx.MockTransport(lambda r:httpx.Response(403,text='test-secret-only'))
     with pytest.raises(AIError) as exc: p.generate('ask',{}, {})
@@ -133,7 +133,7 @@ def test_cancel_busy_and_interrupted(tmp_path):
 
 
 def test_partial_failures_and_question_limits(tmp_path):
-    from app.gemini import AIError
+    from app.groq import AIError
     class Partial(FakeProvider):
         def generate(self,task,payload,schema):
             if task=='extract' and payload['market']=='France': raise AIError('Test provider unavailable.')
@@ -147,3 +147,43 @@ def test_partial_failures_and_question_limits(tmp_path):
         assert len(job['result']['transcripts'])==2
         assert len(job['result']['failures'])==1
         assert c.post('/api/analysis/jobs',json={**payload,'questions':['x'*501]}).status_code==422
+
+@pytest.mark.parametrize('candidate',[
+    {'finish_reason':'length','message':{'content':'{}'}},
+    {'finish_reason':'stop','message':{'content':'not JSON'}},
+    {'finish_reason':'stop','message':{'content':'[]'}},
+])
+def test_groq_rejects_unusable_output(tmp_path,monkeypatch,candidate):
+    import httpx
+    from app.groq import GroqProvider, AIError
+    monkeypatch.setenv('GROQ_API_KEY','test-only')
+    p=GroqProvider(tmp_path,httpx.MockTransport(lambda r:httpx.Response(200,json={'choices':[candidate]})))
+    with pytest.raises(AIError):p.generate('ask',{}, {})
+
+
+def test_groq_obeys_retry_after(tmp_path,monkeypatch):
+    import httpx
+    from app.groq import GroqProvider
+    monkeypatch.setenv('GROQ_API_KEY','test-only')
+    pauses=[];monkeypatch.setattr('app.groq.time.sleep',pauses.append)
+    calls=[]
+    def respond(request):
+        calls.append(request)
+        if len(calls)==1:return httpx.Response(429,headers={'retry-after':'12'})
+        return httpx.Response(200,json={'choices':[{'finish_reason':'stop','message':{'content':'{"answer":"","evidence":[]}'}}]})
+    assert GroqProvider(tmp_path,httpx.MockTransport(respond)).generate('ask',{}, {})['evidence']==[]
+    assert pauses==[12]
+    assert len(calls)==2
+
+def test_short_interviews_retain_all_expert_context(tmp_path):
+    seen=[]
+    class Capture(FakeProvider):
+        def generate(self,task,payload,schema):
+            if task=='ask':seen.extend(payload['passages'])
+            return super().generate(task,payload,schema)
+    with TestClient(create_app(tmp_path,provider=Capture())) as c:
+        c.post('/api/samples');ids=[r['id'] for r in c.get('/api/transcripts').json()]
+        job=wait_job(c,c.post('/api/analysis/ask',json={'transcript_ids':ids,'question':'Budgets and ROI?'}).json()['id'])
+        assert job['status']=='completed'
+        assert len(seen)==21
+        assert any('finance alone' in p['text'] for p in seen)

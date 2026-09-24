@@ -57,3 +57,13 @@ Extract the ZIP, follow the README, load samples, switch experts, search, toggle
 
 
 Live check: the configured key was detected. Corrected the generateContent JSON options to responseMimeType/responseJsonSchema after a reproducible HTTP 400. Subsequent requests returned HTTP 503 (model high demand), including the bounded retry test. Full live answer quality remains unverified. All 24 regression tests pass.
+
+
+## Groq switch and final case-study validation
+
+- Provider replaced with Groq chat completions, strict JSON schema, default openai/gpt-oss-120b. Local key setting corrected without printing or committing credentials.
+- 29 automated tests pass; production frontend builds. Tests include 35-source workloads, exact citations, persistence, cancellation, partial failure, retry-after handling and truncated/invalid provider output.
+- Live three-interview run completed with 18 guide answers, 6 themes and 4 differences. Comparison text preserved France's centre-level growth scope, Germany's broader estimate and the UK's conditional growth forecast.
+- Live Q&A about budgets/ROI cited France, Germany and the UK after expanding short-interview retrieval to all 21 expert passages. An exact vendor-revenue question correctly returned insufficient evidence with no citations.
+- Browser verified saved live results, enabled analysis action and Groq disclosure. Tests ran in isolated ignored QA databases; user transcripts were not replaced.
+- Initial live requests hit Groq rate limits. Numeric Retry-After is now honored up to 60 seconds. Large batches remain subject to the user's plan limits. Evidence checks validate source spans, not every semantic inference; review conclusions before submission.
